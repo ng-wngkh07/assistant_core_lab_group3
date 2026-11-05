@@ -55,10 +55,18 @@ def test_offices_contains_library(client):
     assert library["room"] == "B.201"
 
 
-@pytest.mark.skip(reason="BONUS task — remove this line when you add rate limiting")
 def test_rate_limit(client):
     codes = [client.post("/v1/chat", json={"message": "hi"}).status_code for _ in range(6)]
     assert codes[-1] == 429
+
+
+def test_rate_limit_error_body(client):
+    for _ in range(5):
+        client.post("/v1/chat", json={"message": "hi"})
+    r = client.post("/v1/chat", json={"message": "hi"})
+    assert r.status_code == 429
+    assert r.json()["error"]["code"] == "too_many_requests"
+    assert r.json()["error"]["message"] == "Too many requests"
 
 
 def test_feedback_roundtrip(client):
