@@ -8,6 +8,7 @@ Endpoints (v1): GET /health, POST /v1/chat, POST /v1/feedback, GET /v1/feedback 
 from __future__ import annotations
 
 import uuid
+from datetime import datetime, timezone
 
 from fastapi import Depends, FastAPI, Header, HTTPException, Request, status
 from fastapi.exceptions import RequestValidationError
@@ -35,6 +36,7 @@ def create_app(
         settings.weather_url, settings.campus_lat, settings.campus_lon, timeout_s=settings.weather_timeout_s
     )
     limiter = RateLimiter(settings.rate_limit_per_min)
+    feedback_store: list[FeedbackOut] = []  # Lab 5 replaces this with a database
 
     app = FastAPI(
         title="Study Assistant API", version="1.0.0", description="Backend of the CSC10014 Smart Virtual Assistant."
@@ -81,11 +83,13 @@ def create_app(
 
     @app.post("/v1/feedback", response_model=FeedbackOut, status_code=201, tags=["feedback"])
     def add_feedback(fb: FeedbackIn) -> FeedbackOut:
-        raise NotImplementedError("T2")
+        item = FeedbackOut(**fb.model_dump(), id=len(feedback_store) + 1, created_at=datetime.now(timezone.utc))
+        feedback_store.append(item)
+        return item
 
     @app.get("/v1/feedback", response_model=list[FeedbackOut], tags=["feedback"], dependencies=[Depends(require_admin)])
     def list_feedback() -> list[FeedbackOut]:
-        raise NotImplementedError("T3")
+        return feedback_store
 
     @app.get("/v1/weather", response_model=Weather, tags=["external"], responses={503: {"model": ErrorResponse}})
     def campus_weather() -> Weather:
