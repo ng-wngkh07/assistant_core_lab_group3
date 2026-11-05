@@ -37,6 +37,9 @@ class OfficeDirectory:
         t = text.lower()
         return next((o for name, o in self._offices.items() if name in t), None)
 
+    def all(self) -> list[Office]:
+        return sorted(self._offices.values(), key=lambda o: o.name)
+
 
 @dataclass(frozen=True)
 class Rule:

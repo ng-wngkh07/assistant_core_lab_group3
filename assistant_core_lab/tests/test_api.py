@@ -37,6 +37,24 @@ def test_chat_validation_error(client):
     assert r.status_code == 422 and r.json()["error"]["code"] == "invalid_request"
 
 
+def test_offices_status_200(client):
+    r = client.get("/v1/offices")
+    assert r.status_code == 200
+    data = r.json()
+    assert isinstance(data, list)
+    names = [o["name"] for o in data]
+    assert names == sorted(names)
+
+
+def test_offices_contains_library(client):
+    r = client.get("/v1/offices")
+    assert r.status_code == 200
+    data = r.json()
+    library = next((o for o in data if o["name"] == "Library"), None)
+    assert library is not None
+    assert library["room"] == "B.201"
+
+
 @pytest.mark.skip(reason="BONUS task — remove this line when you add rate limiting")
 def test_rate_limit(client):
     codes = [client.post("/v1/chat", json={"message": "hi"}).status_code for _ in range(6)]
