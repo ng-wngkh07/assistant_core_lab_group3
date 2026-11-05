@@ -33,6 +33,12 @@ class FeedbackOut(FeedbackIn):
     created_at: datetime
 
 
+class OfficeOut(BaseModel):
+    name: str
+    room: str
+    hours: str
+
+
 class Weather(BaseModel):
     temperature_c: float
     wind_kmh: float

@@ -13,7 +13,7 @@ from fastapi import Depends, FastAPI, Header, HTTPException, Request, status
 from fastapi.exceptions import RequestValidationError
 from fastapi.responses import JSONResponse
 
-from assistant_api.schemas import ChatRequest, ChatResponse, ErrorResponse, FeedbackIn, FeedbackOut, Weather
+from assistant_api.schemas import ChatRequest, ChatResponse, ErrorResponse, FeedbackIn, FeedbackOut, OfficeOut, Weather
 from assistant_api.weather import WeatherClient
 from assistant_core import AssistantService, Message
 from assistant_core.config import Settings, load_settings
@@ -67,17 +67,15 @@ def create_app(
     )
     def chat(req: ChatRequest, request: Request) -> ChatResponse:
 
-
-
-
         resp = service.handle(Message(text=req.message, session_id=req.session_id))
         return ChatResponse(**resp.model_dump(), request_id=uuid.uuid4().hex[:12])
 
+    @app.get("/v1/offices", response_model=list[OfficeOut], tags=["offices"])
+    def list_offices() -> list[OfficeOut]:
+        return service.offices.all()
+
     @app.post("/v1/feedback", response_model=FeedbackOut, status_code=201, tags=["feedback"])
     def add_feedback(fb: FeedbackIn) -> FeedbackOut:
-
-
-
 
         raise NotImplementedError("T2")
 
@@ -88,8 +86,6 @@ def create_app(
 
     @app.get("/v1/weather", response_model=Weather, tags=["external"], responses={503: {"model": ErrorResponse}})
     def campus_weather() -> Weather:
-
-
 
         raise NotImplementedError("T4")
 

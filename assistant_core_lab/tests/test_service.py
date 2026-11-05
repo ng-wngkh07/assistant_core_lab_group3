@@ -61,3 +61,11 @@ def test_fallback_when_provider_fails(service):
 def test_empty_message_validation_error():
     with pytest.raises(ValidationError):
         Message(text="")
+
+
+def test_office_directory_all(offices):
+    all_offices = offices.all()
+    assert len(all_offices) == 5
+    names = [o.name for o in all_offices]
+    assert names == sorted(names)
+    assert any(o.name == "Library" for o in all_offices)
