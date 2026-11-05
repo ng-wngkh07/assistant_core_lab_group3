@@ -77,8 +77,26 @@ def test_feedback_roundtrip(client):
     assert listed.status_code == 200 and len(listed.json()) == 1
 
 
+def test_feedback_valid_ratings(client):
+    for r_val in (-1, 0, 1):
+        resp = client.post(
+            "/v1/feedback", json={"request_id": f"req-{r_val}", "rating": r_val, "comment": "test feedback"}
+        )
+        assert resp.status_code == 201
+        data = resp.json()
+        assert data["rating"] == r_val
+        assert "id" in data
+        assert "created_at" in data
+
+
 def test_feedback_rating_out_of_range(client):
     assert client.post("/v1/feedback", json={"request_id": "x", "rating": 5}).status_code == 422
+    assert client.post("/v1/feedback", json={"request_id": "x", "rating": -2}).status_code == 422
+
+
+def test_feedback_auth_missing_or_invalid_key(client):
+    assert client.get("/v1/feedback").status_code == 401
+    assert client.get("/v1/feedback", headers={"X-API-Key": "wrong-key"}).status_code == 401
 
 
 def test_weather_ok(client):
