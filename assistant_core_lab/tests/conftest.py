@@ -22,6 +22,7 @@ def settings(data_dir: Path) -> Settings:
         retake_multiplier=1.5,
         max_credits=30,
         log_level="INFO",
+        database_url="sqlite://",
     )
 
 

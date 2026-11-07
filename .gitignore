@@ -9,3 +9,6 @@ build/
 dist/
 *.egg-info/
 .DS_Store
+*.db
+*.db-shm
+*.db-wal
