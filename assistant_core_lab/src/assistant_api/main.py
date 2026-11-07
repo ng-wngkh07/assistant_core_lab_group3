@@ -7,6 +7,7 @@ Endpoints (v1): GET /health, POST /v1/chat, POST /v1/feedback, GET /v1/feedback 
 
 from __future__ import annotations
 
+import time
 import uuid
 from datetime import datetime, timezone
 
@@ -14,6 +15,7 @@ from fastapi import Depends, FastAPI, Header, HTTPException, Request, status
 from fastapi.exceptions import RequestValidationError
 from fastapi.responses import JSONResponse
 
+from assistant_api.db import Repository, init_db, make_engine
 from assistant_api.ratelimit import RateLimiter
 from assistant_api.schemas import ChatRequest, ChatResponse, ErrorResponse, FeedbackIn, FeedbackOut, OfficeOut, Weather
 from assistant_api.weather import ExternalServiceError, WeatherClient
@@ -24,7 +26,10 @@ from assistant_core.responder import StubLLMResponder
 
 
 def create_app(
-    settings: Settings | None = None, service: AssistantService | None = None, weather: WeatherClient | None = None
+    settings: Settings | None = None,
+    service: AssistantService | None = None,
+    weather: WeatherClient | None = None,
+    repo: Repository | None = None,
 ) -> FastAPI:
     settings = settings or load_settings()
     if service is None:
@@ -36,6 +41,10 @@ def create_app(
         settings.weather_url, settings.campus_lat, settings.campus_lon, timeout_s=settings.weather_timeout_s
     )
     limiter = RateLimiter(settings.rate_limit_per_min)
+    if repo is None:
+        engine = make_engine(settings.database_url)
+        init_db(engine)
+        repo = Repository(engine, settings.session_salt)
     feedback_store: list[FeedbackOut] = []  # Lab 5 replaces this with a database
 
     app = FastAPI(
@@ -74,8 +83,21 @@ def create_app(
         if not limiter.allow(client):
             raise HTTPException(status.HTTP_429_TOO_MANY_REQUESTS, "Too many requests")
 
+        start = time.perf_counter()
         resp = service.handle(Message(text=req.message, session_id=req.session_id))
-        return ChatResponse(**resp.model_dump(), request_id=uuid.uuid4().hex[:12])
+        request_id = uuid.uuid4().hex[:12]
+        latency_ms = round((time.perf_counter() - start) * 1000, 2)
+        topic = resp.sources[0].id if resp.sources else None
+        repo.record_interaction(
+            raw_session=req.session_id,
+            request_id=request_id,
+            intent=resp.intent.value,
+            topic=topic,
+            resolved=resp.intent.value != "unknown",
+            degraded=resp.degraded,
+            latency_ms=latency_ms,
+        )
+        return ChatResponse(**resp.model_dump(), request_id=request_id)
 
     @app.get("/v1/offices", response_model=list[OfficeOut], tags=["offices"])
     def list_offices() -> list[OfficeOut]:
