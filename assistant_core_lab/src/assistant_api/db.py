@@ -94,7 +94,12 @@ class Repository:
             interaction = db.exec(select(Interaction).where(Interaction.request_id == request_id)).first()
             if interaction is None:
                 return None
-            raise NotImplementedError("R1")
+            fb = Feedback(request_id=request_id, rating=rating, comment=comment)
+            db.add(fb)
+            db.commit()
+            db.refresh(fb)
+            return fb
 
     def list_feedback(self, limit: int = 100) -> list[Feedback]:
-        raise NotImplementedError("R2")
+        with Session(self.engine) as db:
+            return list(db.exec(select(Feedback).order_by(Feedback.created_at.desc()).limit(limit)))

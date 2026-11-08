@@ -70,7 +70,9 @@ def test_rate_limit_error_body(client):
 
 
 def test_feedback_roundtrip(client):
-    r = client.post("/v1/feedback", json={"request_id": "abc123", "rating": 1})
+    chat_resp = client.post("/v1/chat", json={"message": "hello"})
+    req_id = chat_resp.json()["request_id"]
+    r = client.post("/v1/feedback", json={"request_id": req_id, "rating": 1})
     assert r.status_code == 201 and r.json()["id"] == 1
     assert client.get("/v1/feedback").status_code == 401
     listed = client.get("/v1/feedback", headers={"X-API-Key": "secret-admin"})
@@ -79,8 +81,10 @@ def test_feedback_roundtrip(client):
 
 def test_feedback_valid_ratings(client):
     for r_val in (-1, 0, 1):
+        chat_resp = client.post("/v1/chat", json={"message": f"question {r_val}"})
+        req_id = chat_resp.json()["request_id"]
         resp = client.post(
-            "/v1/feedback", json={"request_id": f"req-{r_val}", "rating": r_val, "comment": "test feedback"}
+            "/v1/feedback", json={"request_id": req_id, "rating": r_val, "comment": "test feedback"}
         )
         assert resp.status_code == 201
         data = resp.json()
@@ -90,8 +94,16 @@ def test_feedback_valid_ratings(client):
 
 
 def test_feedback_rating_out_of_range(client):
-    assert client.post("/v1/feedback", json={"request_id": "x", "rating": 5}).status_code == 422
-    assert client.post("/v1/feedback", json={"request_id": "x", "rating": -2}).status_code == 422
+    chat_resp = client.post("/v1/chat", json={"message": "question"})
+    req_id = chat_resp.json()["request_id"]
+    assert client.post("/v1/feedback", json={"request_id": req_id, "rating": 5}).status_code == 422
+    assert client.post("/v1/feedback", json={"request_id": req_id, "rating": -2}).status_code == 422
+
+
+def test_feedback_unknown_request_id_returns_404(client):
+    r = client.post("/v1/feedback", json={"request_id": "nope", "rating": 1})
+    assert r.status_code == 404
+    assert r.json()["error"]["code"] == "interaction_not_found"
 
 
 def test_feedback_auth_missing_or_invalid_key(client):

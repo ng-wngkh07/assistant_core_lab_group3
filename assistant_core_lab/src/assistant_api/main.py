@@ -1,6 +1,4 @@
-"""FastAPI application — Lab 4 STARTER.  Run:  uvicorn assistant_api.main:create_app --factory --reload
-
-Most of the file is given. Complete the four TODOs (T1–T4); the tests in tests/test_api.py tell you when you are done.
+"""FastAPI application — Lab 5. Run: uvicorn assistant_api.main:create_app --factory --reload
 
 Endpoints (v1): GET /health, POST /v1/chat, POST /v1/feedback, GET /v1/feedback (admin), GET /v1/weather
 """
@@ -9,7 +7,6 @@ from __future__ import annotations
 
 import time
 import uuid
-from datetime import datetime, timezone
 
 from fastapi import Depends, FastAPI, Header, HTTPException, Request, status
 from fastapi.exceptions import RequestValidationError
@@ -45,7 +42,6 @@ def create_app(
         engine = make_engine(settings.database_url)
         init_db(engine)
         repo = Repository(engine, settings.session_salt)
-    feedback_store: list[FeedbackOut] = []  # Lab 5 replaces this with a database
 
     app = FastAPI(
         title="Study Assistant API", version="1.0.0", description="Backend of the CSC10014 Smart Virtual Assistant."
@@ -103,15 +99,38 @@ def create_app(
     def list_offices() -> list[OfficeOut]:
         return service.offices.all()
 
-    @app.post("/v1/feedback", response_model=FeedbackOut, status_code=201, tags=["feedback"])
+    @app.post(
+        "/v1/feedback",
+        response_model=FeedbackOut,
+        status_code=201,
+        tags=["feedback"],
+        responses={404: {"model": ErrorResponse}, 422: {"model": ErrorResponse}},
+    )
     def add_feedback(fb: FeedbackIn) -> FeedbackOut:
-        item = FeedbackOut(**fb.model_dump(), id=len(feedback_store) + 1, created_at=datetime.now(timezone.utc))
-        feedback_store.append(item)
-        return item
+        saved = repo.add_feedback(request_id=fb.request_id, rating=fb.rating, comment=fb.comment)
+        if saved is None:
+            raise HTTPException(status.HTTP_404_NOT_FOUND, "Interaction not found")
+        return FeedbackOut(
+            id=saved.id,
+            request_id=saved.request_id,
+            rating=saved.rating,
+            comment=saved.comment,
+            created_at=saved.created_at,
+        )
 
     @app.get("/v1/feedback", response_model=list[FeedbackOut], tags=["feedback"], dependencies=[Depends(require_admin)])
-    def list_feedback() -> list[FeedbackOut]:
-        return feedback_store
+    def list_feedback(limit: int = 100) -> list[FeedbackOut]:
+        rows = repo.list_feedback(limit=limit)
+        return [
+            FeedbackOut(
+                id=item.id,
+                request_id=item.request_id,
+                rating=item.rating,
+                comment=item.comment,
+                created_at=item.created_at,
+            )
+            for item in rows
+        ]
 
     @app.get("/v1/weather", response_model=Weather, tags=["external"], responses={503: {"model": ErrorResponse}})
     def campus_weather() -> Weather:
