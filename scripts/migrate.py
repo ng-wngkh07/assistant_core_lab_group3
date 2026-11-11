@@ -34,7 +34,7 @@ def run_migrations(db_path: str | Path) -> None:
     migration_files = sorted(migrations_dir.glob("*.sql"))
     for mf in migration_files:
         if mf.name not in applied:
-            print(f"apply {mf.name}")
+            print(f"Applying {mf.name}...")
             with open(mf, encoding="utf-8") as f:
                 sql_content = f.read()
             cur.executescript(sql_content)
@@ -42,6 +42,7 @@ def run_migrations(db_path: str | Path) -> None:
             con.commit()
 
     con.close()
+    print(f"Migrations completed successfully on {db_file.name}.")
 
 
 def main() -> None:

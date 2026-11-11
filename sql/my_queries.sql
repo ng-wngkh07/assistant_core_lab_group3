@@ -1,7 +1,9 @@
 -- sql/my_queries.sql: Analytical queries on assistant.db
 
+-- ============================================================================
 -- F1: How many questions per intent?
 -- Group interactions by intent and sort by descending request count.
+-- ============================================================================
 SELECT intent, COUNT(*) AS requests
 FROM interaction
 GROUP BY intent
@@ -17,8 +19,10 @@ ORDER BY requests DESC;
 -- unknown   26
 
 
+-- ============================================================================
 -- F2: Average time taken per intent?
 -- Compute average latency in milliseconds for each intent, rounded to 1 decimal place.
+-- ============================================================================
 SELECT intent, ROUND(AVG(latency_ms), 1) AS avg_latency_ms
 FROM interaction
 GROUP BY intent
@@ -34,8 +38,10 @@ ORDER BY avg_latency_ms DESC;
 -- greeting  12.3
 
 
+-- ============================================================================
 -- F3: Which topics got the most thumbs-down?
 -- Join interaction with feedback where rating = -1, grouped by topic, sorted by thumbs-down count.
+-- ============================================================================
 SELECT i.topic, COUNT(*) AS thumbs_down
 FROM interaction i
 JOIN feedback f ON f.request_id = i.request_id
@@ -55,8 +61,10 @@ ORDER BY thumbs_down DESC;
 -- H26-5.3        2
 
 
--- H2: What share of answers used a backup path (degraded responses)?
+-- ============================================================================
+-- H2 (Bonus): What share of answers used a backup path (degraded responses)?
 -- Compute total interactions, count of degraded interactions, and percentage.
+-- ============================================================================
 SELECT 
     COUNT(*) AS total_interactions,
     SUM(CASE WHEN degraded THEN 1 ELSE 0 END) AS degraded_count,

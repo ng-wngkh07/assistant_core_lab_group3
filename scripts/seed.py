@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Seed assistant.db with simulated interaction and feedback data."""
+"""Seed assistant.db with simulated interaction and feedback data for Lab 5."""
 
 from __future__ import annotations
 
@@ -40,10 +40,53 @@ COMMENTS_POSITIVE = [
     "Quick answer",
 ]
 
+INIT_SCHEMA_SQL = """
+CREATE TABLE IF NOT EXISTS chat_session (
+    id TEXT PRIMARY KEY,
+    channel TEXT NOT NULL DEFAULT 'web',
+    created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP
+);
+
+CREATE TABLE IF NOT EXISTS interaction (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    request_id TEXT NOT NULL UNIQUE,
+    session_id TEXT NOT NULL,
+    intent TEXT NOT NULL,
+    topic TEXT,
+    resolved BOOLEAN NOT NULL DEFAULT 1,
+    degraded BOOLEAN NOT NULL DEFAULT 0,
+    latency_ms REAL NOT NULL DEFAULT 0.0,
+    created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    FOREIGN KEY (session_id) REFERENCES chat_session(id)
+);
+
+CREATE INDEX IF NOT EXISTS idx_interaction_session_id ON interaction(session_id);
+CREATE INDEX IF NOT EXISTS idx_interaction_intent ON interaction(intent);
+CREATE INDEX IF NOT EXISTS idx_interaction_created_at ON interaction(created_at);
+
+CREATE TABLE IF NOT EXISTS feedback (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    request_id TEXT NOT NULL,
+    rating INTEGER NOT NULL CHECK (rating IN (-1, 0, 1)),
+    comment TEXT,
+    created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    FOREIGN KEY (request_id) REFERENCES interaction(request_id)
+);
+
+CREATE INDEX IF NOT EXISTS idx_feedback_request_id ON feedback(request_id);
+"""
+
+
+def ensure_schema(con: sqlite3.Connection) -> None:
+    """Ensure database schema exists before seeding."""
+    con.executescript(INIT_SCHEMA_SQL)
+    con.commit()
+
 
 def seed_database(db_path: str | Path, count: int = 300) -> None:
     db_file = Path(db_path)
     con = sqlite3.connect(db_file)
+    ensure_schema(con)
     cur = con.cursor()
 
     random.seed(42)  # reproducible seed
@@ -117,15 +160,13 @@ def seed_database(db_path: str | Path, count: int = 300) -> None:
 
     con.commit()
     con.close()
-    print(f"seeded {count} interactions into {db_file.name}")
+    print(f"Successfully seeded {count} interactions and {len(feedback_to_insert)} feedbacks into '{db_file}'.")
 
 
 def main() -> None:
-    if len(sys.argv) < 2:
-        print("Usage: python scripts/seed.py <db_path> [count]")
-        sys.exit(1)
+    db_path = sys.argv[1] if len(sys.argv) > 1 else "assistant.db"
     count = int(sys.argv[2]) if len(sys.argv) > 2 else 300
-    seed_database(sys.argv[1], count)
+    seed_database(db_path, count)
 
 
 if __name__ == "__main__":

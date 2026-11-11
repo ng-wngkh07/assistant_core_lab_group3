@@ -1,14 +1,16 @@
-"""FastAPI application — Lab 5. Run: uvicorn assistant_api.main:create_app --factory --reload
+"""FastAPI application — Study Assistant API. Run: uvicorn assistant_api.main:create_app --factory --reload
 
-Endpoints (v1): GET /health, POST /v1/chat, POST /v1/feedback, GET /v1/feedback (admin), GET /v1/weather
+Endpoints (v1): GET /health, POST /v1/chat, GET /v1/offices,
+POST /v1/feedback, GET /v1/feedback (admin), GET /v1/weather
 """
 
 from __future__ import annotations
 
 import time
 import uuid
+from typing import Annotated
 
-from fastapi import Depends, FastAPI, Header, HTTPException, Request, status
+from fastapi import Depends, FastAPI, Header, HTTPException, Query, Request, status
 from fastapi.exceptions import RequestValidationError
 from fastapi.responses import JSONResponse
 
@@ -110,27 +112,17 @@ def create_app(
         saved = repo.add_feedback(request_id=fb.request_id, rating=fb.rating, comment=fb.comment)
         if saved is None:
             raise HTTPException(status.HTTP_404_NOT_FOUND, "Interaction not found")
-        return FeedbackOut(
-            id=saved.id,
-            request_id=saved.request_id,
-            rating=saved.rating,
-            comment=saved.comment,
-            created_at=saved.created_at,
-        )
+        return FeedbackOut.model_validate(saved, from_attributes=True)
 
-    @app.get("/v1/feedback", response_model=list[FeedbackOut], tags=["feedback"], dependencies=[Depends(require_admin)])
-    def list_feedback(limit: int = 100) -> list[FeedbackOut]:
-        rows = repo.list_feedback(limit=limit)
-        return [
-            FeedbackOut(
-                id=item.id,
-                request_id=item.request_id,
-                rating=item.rating,
-                comment=item.comment,
-                created_at=item.created_at,
-            )
-            for item in rows
-        ]
+    @app.get(
+        "/v1/feedback",
+        response_model=list[FeedbackOut],
+        tags=["feedback"],
+        dependencies=[Depends(require_admin)],
+        responses={401: {"model": ErrorResponse}, 422: {"model": ErrorResponse}},
+    )
+    def list_feedback(limit: Annotated[int, Query(ge=1, le=1000)] = 100) -> list[FeedbackOut]:
+        return [FeedbackOut.model_validate(item, from_attributes=True) for item in repo.list_feedback(limit=limit)]
 
     @app.get("/v1/weather", response_model=Weather, tags=["external"], responses={503: {"model": ErrorResponse}})
     def campus_weather() -> Weather:
