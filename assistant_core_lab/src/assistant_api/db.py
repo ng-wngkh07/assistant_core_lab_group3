@@ -89,12 +89,22 @@ class Repository:
             db.add(interaction)
             db.commit()
 
-    def add_feedback(self, request_id: str, rating: int, comment: str | None) -> Feedback | None:
+    def add_feedback(self, request_id: str, rating: int, comment: str | None = None) -> Feedback | None:
+        """Persist feedback for an existing interaction; returns None if request_id is unknown."""
         with Session(self.engine) as db:
             interaction = db.exec(select(Interaction).where(Interaction.request_id == request_id)).first()
             if interaction is None:
                 return None
-            raise NotImplementedError("R1")
+            fb = Feedback(request_id=request_id, rating=rating, comment=comment)
+            db.add(fb)
+            db.commit()
+            db.refresh(fb)
+            return fb
 
     def list_feedback(self, limit: int = 100) -> list[Feedback]:
-        raise NotImplementedError("R2")
+        """Return newest feedback entries first, up to `limit` rows."""
+        if limit <= 0:
+            return []
+        with Session(self.engine) as db:
+            statement = select(Feedback).order_by(Feedback.created_at.desc(), Feedback.id.desc()).limit(limit)
+            return list(db.exec(statement).all())
