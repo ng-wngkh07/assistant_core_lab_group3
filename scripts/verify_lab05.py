@@ -6,7 +6,7 @@ Runs all quality checks and tests for Member 4 deliverable:
 - Practice Python D1–D3 (pytest practice/test_school_repo.py)
 - Migration & Seeding pipeline (migrate.py & seed.py)
 - Part F Analytical Queries (sql/my_queries.sql)
-- Full Assistant API, Database, Persistence & Statistics test suite (pytest assistant_core_lab/)
+- Full Assistant API, Database, Persistence & Statistics test suite (pytest tests/)
 """
 
 from __future__ import annotations
@@ -34,7 +34,7 @@ def run_step(title: str, cmd: list[str], cwd: Path) -> bool:
 
 def main():
     practice_dir = ROOT_DIR / "practice"
-    app_dir = ROOT_DIR / "assistant_core_lab"
+    app_dir = ROOT_DIR
 
     all_passed = True
 
