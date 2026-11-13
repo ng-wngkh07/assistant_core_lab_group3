@@ -9,6 +9,10 @@ requires-python = ">=3.10"
 dependencies = [
     "pydantic>=2.7,<3",
     "python-dotenv>=1.0,<2",
+    "fastapi>=0.115,<0.116",
+    "httpx>=0.27,<0.28",
+    "uvicorn>=0.30,<0.31",
+    "sqlmodel>=0.0.22,<0.1",
 ]
 
 [project.optional-dependencies]
@@ -17,9 +21,12 @@ dev = [
     "ruff>=0.6,<1",
 ]
 
+[tool.setuptools.packages.find]
+where = ["src"]
+
 [tool.pytest.ini_options]
-pythonpath = ["assistant_core_lab/src"]
-testpaths = ["assistant_core_lab/tests"]
+pythonpath = ["src"]
+testpaths = ["tests"]
 
 [tool.ruff]
 line-length = 120
