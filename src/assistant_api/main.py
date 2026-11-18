@@ -18,10 +18,8 @@ from assistant_api.db import Repository, init_db, make_engine
 from assistant_api.ratelimit import RateLimiter
 from assistant_api.schemas import ChatRequest, ChatResponse, ErrorResponse, FeedbackIn, FeedbackOut, OfficeOut, Weather
 from assistant_api.weather import ExternalServiceError, WeatherClient
-from assistant_core import AssistantService, Message
+from assistant_core import AssistantService, Message, build_service
 from assistant_core.config import Settings, load_settings
-from assistant_core.knowledge import Handbook, OfficeDirectory
-from assistant_core.responder import StubLLMResponder
 
 
 def create_app(
@@ -32,10 +30,7 @@ def create_app(
 ) -> FastAPI:
     settings = settings or load_settings()
     if service is None:
-        offices = OfficeDirectory.from_csv(settings.data_dir / "offices.csv")
-        handbook = Handbook.from_json(settings.data_dir / "handbook.json")
-        responder = StubLLMResponder()
-        service = AssistantService(settings, offices, handbook, responder)
+        service = build_service(settings)
     weather = weather or WeatherClient(
         settings.weather_url, settings.campus_lat, settings.campus_lon, timeout_s=settings.weather_timeout_s
     )

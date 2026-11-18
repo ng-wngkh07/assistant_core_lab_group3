@@ -21,3 +21,11 @@ class StubLLMResponder:
         if self.fail:
             raise ProviderError("stub provider unavailable")
         return f"Based on '{rule.title}': {rule.text}"
+
+
+def make_responder(provider: str) -> Responder:
+    if provider == "stub":
+        return StubLLMResponder()
+    if provider == "template":
+        return TemplateResponder()
+    raise ProviderError(f"unknown provider {provider!r} (real providers arrive in Week 4)")
