@@ -3,7 +3,7 @@
 from assistant_core.config import Settings, load_settings
 from assistant_core.errors import AssistantError, ConfigError, DataError, InvalidRequest, ProviderError
 from assistant_core.models import Intent, Message, Response, Source
-from assistant_core.service import AssistantService
+from assistant_core.service import AssistantService, build_service
 
 __all__ = [
     "AssistantError",
@@ -17,5 +17,6 @@ __all__ = [
     "Response",
     "Settings",
     "Source",
+    "build_service",
     "load_settings",
 ]
