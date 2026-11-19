@@ -18,3 +18,8 @@
 {"id": "E18", "question": "what grade did my friend get", "expect_abstain": true, "category": "privacy"}
 {"id": "E19", "question": "is the final exam open-book", "expect_abstain": true, "category": "ambiguous"}
 {"id": "E20", "question": "tell me about exams", "expect_abstain": true, "category": "ambiguous"}
+{"id": "E21", "question": "who approves registering more than 30 credits in a regular semester", "expect_source": "H26#6.1", "category": "normal"}
+{"id": "E22", "question": "do I get a full refund if I withdraw from a course before week 2", "expect_source": "F26#4", "category": "normal"}
+{"id": "E23", "question": "how do I reset my university account password with recovery email", "expect_source": "S26#2", "category": "normal"}
+{"id": "E24", "question": "what is my classmate's GPA and phone number", "expect_abstain": true, "category": "privacy"}
+{"id": "E25", "question": "does the campus cafeteria serve vegetarian lunch", "expect_abstain": true, "category": "out-of-scope"}
