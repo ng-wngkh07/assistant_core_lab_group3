@@ -26,6 +26,7 @@ if "rated" not in st.session_state:
     st.session_state.rated = set()
 
 st.title("🎓 FIT Study Assistant")
+st.caption("AI assistant — ask one question at a time. Check important decisions with the Training Office.")
 if not client.healthy():
     st.error("The assistant backend is not reachable. Start it with: uvicorn assistant_api.main:create_app --factory")
 
@@ -56,8 +57,15 @@ for i, m in enumerate(st.session_state.messages):
                 st.session_state.rated.add(rid)
                 st.toast("Thanks — we will look at this answer.")
 
+if len(st.session_state.messages) == 1:
+    st.caption("Suggested questions:")
+    cols = st.columns(2)
+    for idx, ex in enumerate(EXAMPLES):
+        if cols[idx % 2].button(ex, key=f"starter_{idx}", use_container_width=True):
+            st.session_state.pending = ex
+
 # ---- new question ----------------------------------------------------------------
-question = st.chat_input("Ask about fees, offices or the handbook…") or st.session_state.pop("pending", None)
+question = st.chat_input("Ask one question (fees, offices, rules)…") or st.session_state.pop("pending", None)
 if question:
     problem = validate_input(question)
     if problem:
